@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ==============================
-#  Data Models (using dataclass instead of pydantic)
+#  Data Models (using dataclass)
 # ==============================
 @dataclass
 class ResumeRequest:
