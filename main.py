@@ -1,12 +1,12 @@
 import os
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import shutil
 from datetime import datetime
-from contextlib import asynccontextmanager
 
 # ==============================
 #  Configuration & Logging
@@ -22,13 +22,6 @@ logger = logging.getLogger(__name__)
 # ==============================
 class ResumeRequest(BaseModel):
     resume_text: str
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "resume_text": "Experienced Python developer with 5 years of experience in FastAPI and Machine Learning..."
-            }
-        }
 
 class ResumeResponse(BaseModel):
     score: int
@@ -49,12 +42,10 @@ class ResumeResponse(BaseModel):
 # ==============================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Code to run before the application starts
     logger.info("🚀 Starting Resume Analyzer API...")
     logger.info("📚 Documentation available at /docs")
     logger.info("🔍 Redoc available at /redoc")
     yield
-    # Shutdown: Code to run when the application is shutting down
     logger.info("🛑 Shutting down Resume Analyzer API...")
 
 # ==============================
@@ -66,23 +57,13 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_tags=[
-        {"name": "Health", "description": "Health check endpoints"},
-        {"name": "Analysis", "description": "Resume analysis endpoints"},
-        {"name": "Files", "description": "File upload endpoints"}
-    ],
-    lifespan=lifespan  # <-- اینجا تابع lifespan رو به برنامه اضافه کردیم
+    lifespan=lifespan
 )
 
 # ==============================
 #  Health Endpoints
 # ==============================
-@app.get(
-    "/",
-    tags=["Health"],
-    summary="Root endpoint",
-    description="Check if the API is running"
-)
+@app.get("/")
 async def root():
     return {
         "message": "🚀 Resume Analyzer API is running!",
@@ -92,12 +73,7 @@ async def root():
         "status": "active"
     }
 
-@app.get(
-    "/health",
-    tags=["Health"],
-    summary="Health check",
-    description="Get the health status of the service"
-)
+@app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
@@ -109,13 +85,7 @@ async def health_check():
 # ==============================
 #  Analysis Endpoint
 # ==============================
-@app.post(
-    "/api/v1/analyze",
-    response_model=ResumeResponse,
-    tags=["Analysis"],
-    summary="Analyze a resume",
-    description="Send a resume text and receive a detailed AI analysis"
-)
+@app.post("/api/v1/analyze", response_model=ResumeResponse)
 async def analyze_resume(request: ResumeRequest):
     logger.info(f"Received analysis request. Text length: {len(request.resume_text)}")
     
@@ -127,7 +97,6 @@ async def analyze_resume(request: ResumeRequest):
         )
     
     try:
-        # TODO: Connect to Groq API here (currently returns sample data)
         result = {
             "score": 85,
             "strengths": ["Python", "FastAPI", "Machine Learning", "Team Leadership"],
@@ -146,10 +115,8 @@ async def analyze_resume(request: ResumeRequest):
             "suggested_roles": ["Senior Backend Developer", "DevOps Engineer", "Tech Lead"],
             "summary": "Experienced Python developer with strong backend skills and team leadership experience."
         }
-        
         logger.info("Analysis completed successfully")
         return result
-        
     except Exception as e:
         logger.error(f"Error in analysis: {str(e)}")
         raise HTTPException(
@@ -160,12 +127,7 @@ async def analyze_resume(request: ResumeRequest):
 # ==============================
 #  File Upload Endpoint
 # ==============================
-@app.post(
-    "/api/v1/upload",
-    tags=["Files"],
-    summary="Upload a resume file",
-    description="Upload a PDF or DOCX file for analysis"
-)
+@app.post("/api/v1/upload")
 async def upload_resume(file: UploadFile = File(...)):
     logger.info(f"File upload requested: {file.filename}")
     
@@ -196,7 +158,6 @@ async def upload_resume(file: UploadFile = File(...)):
             "path": file_path,
             "note": "File extraction not yet implemented. Coming soon!"
         }
-        
     except Exception as e:
         logger.error(f"Upload error: {str(e)}")
         raise HTTPException(
@@ -209,28 +170,20 @@ async def upload_resume(file: UploadFile = File(...)):
 # ==============================
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    logger.warning(f"404 Not Found: {request.url}")
     return JSONResponse(
         status_code=404,
-        content={
-            "detail": "Endpoint not found. Please check the documentation at /docs",
-            "docs_url": "/docs"
-        }
+        content={"detail": "Endpoint not found. Please check /docs"}
     )
 
 @app.exception_handler(405)
 async def method_not_allowed_handler(request, exc):
-    logger.warning(f"405 Method Not Allowed: {request.method} {request.url}")
     return JSONResponse(
         status_code=405,
-        content={
-            "detail": "Method not allowed for this endpoint",
-            "allowed_methods": ["GET", "POST"]
-        }
+        content={"detail": "Method not allowed for this endpoint"}
     )
 
 # ==============================
-#  Main Entry Point
+#  Main Entry Point (Fixed for Render)
 # ==============================
 if __name__ == "__main__":
     import uvicorn
@@ -239,5 +192,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=port,
-        reload=True if os.getenv("ENVIRONMENT") == "development" else False
+        reload=False  # Disable reload in production
     )
