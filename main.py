@@ -3,7 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from dataclasses import dataclass
 from typing import Optional, List
 import shutil
 from datetime import datetime
@@ -18,12 +18,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ==============================
-#  Data Models (Pydantic)
+#  Data Models (using dataclass instead of pydantic)
 # ==============================
-class ResumeRequest(BaseModel):
+@dataclass
+class ResumeRequest:
     resume_text: str
 
-class ResumeResponse(BaseModel):
+@dataclass
+class ResumeResponse:
     score: int
     strengths: List[str]
     weaknesses: List[str]
@@ -38,7 +40,7 @@ class ResumeResponse(BaseModel):
     summary: str
 
 # ==============================
-#  Lifespan Events (Startup & Shutdown)
+#  Lifespan Events
 # ==============================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -85,7 +87,7 @@ async def health_check():
 # ==============================
 #  Analysis Endpoint
 # ==============================
-@app.post("/api/v1/analyze", response_model=ResumeResponse)
+@app.post("/api/v1/analyze")
 async def analyze_resume(request: ResumeRequest):
     logger.info(f"Received analysis request. Text length: {len(request.resume_text)}")
     
@@ -183,7 +185,7 @@ async def method_not_allowed_handler(request, exc):
     )
 
 # ==============================
-#  Main Entry Point (Fixed for Render)
+#  Main Entry Point
 # ==============================
 if __name__ == "__main__":
     import uvicorn
@@ -192,5 +194,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=port,
-        reload=False  # Disable reload in production
+        reload=False
     )
