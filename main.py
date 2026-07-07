@@ -32,12 +32,12 @@ class ResumeResponse:
     suggestions: List[str]
     technical_skills: List[str]
     soft_skills: List[str]
+    summary: str  # فیلد بدون مقدار پیش‌فرض
     years_experience: Optional[float] = None
     match_score: Optional[int] = None
     missing_skills: Optional[List[str]] = None
     career_level: Optional[str] = None
     suggested_roles: Optional[List[str]] = None
-    summary: str
 
 # ==============================
 #  Lifespan Events
@@ -99,6 +99,7 @@ async def analyze_resume(request: ResumeRequest):
         )
     
     try:
+        # TODO: Connect to Groq API here (currently returns sample data)
         result = {
             "score": 85,
             "strengths": ["Python", "FastAPI", "Machine Learning", "Team Leadership"],
